@@ -27,6 +27,8 @@ The default configuration is Shanghai:
 - Latitude: `31.2304`
 - Longitude: `121.4737`
 
-## Icon Credits
+## Credits and Licenses
 
-Bundled Meteocons icons are from <https://github.com/basmilius/meteocons> and are licensed under the MIT License. A copy of the license is included in `contents/icons/meteocons/LICENSE`.
+- Weather and forecast data are provided by [Open-Meteo.com](https://open-meteo.com/). Open-Meteo API data is licensed under the [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).
+- Location search uses the [Open-Meteo Geocoding API](https://open-meteo.com/en/docs/geocoding-api). Location data is based on [GeoNames](https://www.geonames.org/), which is licensed under the [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).
+- Bundled Meteocons icons are from [Meteocons](https://github.com/basmilius/meteocons) by Bas Milius and are licensed under the MIT License. A copy of the license is included in `contents/icons/meteocons/LICENSE`.
