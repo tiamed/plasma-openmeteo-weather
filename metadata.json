@@ -1,0 +1,20 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Email": "20151080+tiamed@users.noreply.github.com",
+                "Name": "tiamed"
+            }
+        ],
+        "Category": "Online Services",
+        "Description": "Panel-friendly weather card powered by Open-Meteo",
+        "EnabledByDefault": true,
+        "Icon": "weather-clear",
+        "Id": "com.local.openmeteo.weathercard",
+        "License": "GPL-3.0-or-later",
+        "Name": "Open-Meteo Weather Card",
+        "Website": "https://github.com/tiamed/plasma-openmeteo-weather"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0"
+}

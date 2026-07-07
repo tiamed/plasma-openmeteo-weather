@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0
+      http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+  <kcfgfile name=""/>
+
+  <group name="General">
+    <entry name="locationName" type="String">
+      <label>Location label shown in the widget.</label>
+      <default>Shanghai</default>
+    </entry>
+    <entry name="latitude" type="Double">
+      <label>Latitude for Open-Meteo forecast requests.</label>
+      <default>31.2304</default>
+    </entry>
+    <entry name="longitude" type="Double">
+      <label>Longitude for Open-Meteo forecast requests.</label>
+      <default>121.4737</default>
+    </entry>
+    <entry name="temperatureUnit" type="String">
+      <label>Temperature unit requested from Open-Meteo.</label>
+      <default>celsius</default>
+    </entry>
+    <entry name="iconStyle" type="String">
+      <label>Icon style used by the widget.</label>
+      <default>meteocons-fill</default>
+    </entry>
+    <entry name="refreshMinutes" type="Int">
+      <label>Automatic refresh interval in minutes.</label>
+      <default>30</default>
+      <min>5</min>
+      <max>240</max>
+    </entry>
+    <entry name="showPanelText" type="Bool">
+      <label>Show temperature text next to the icon in a horizontal panel.</label>
+      <default>true</default>
+    </entry>
+  </group>
+</kcfg>
