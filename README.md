@@ -27,6 +27,16 @@ The default configuration is Shanghai:
 - Latitude: `31.2304`
 - Longitude: `121.4737`
 
+## Translations
+
+UI strings are translated from GNU gettext catalogs in `po/`. The widget still lets you pick a language in settings (independent of the desktop locale).
+
+- Edit or add `po/<lang>.po` (for example `po/de.po`)
+- Run `scripts/build-locales.py compile` to regenerate `contents/ui/LocaleData.js`
+- Or run `scripts/build-locales.py sync` to extract new strings from QML, merge into `.po` files, and compile
+
+English is the source language and does not need a `.po` file.
+
 ## Credits and Licenses
 
 - Weather and forecast data are provided by [Open-Meteo.com](https://open-meteo.com/). Open-Meteo API data is licensed under the [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).

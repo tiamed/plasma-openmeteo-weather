@@ -15,8 +15,11 @@ MouseArea {
     readonly property bool verticalPanel: Plasmoid.formFactor === PlasmaCore.Types.Vertical
     readonly property bool showText: horizontalPanel && Plasmoid.configuration.showPanelText
     readonly property int iconSize: Math.max(Kirigami.Units.iconSizes.small, Math.min(Kirigami.Units.iconSizes.smallMedium, height - Kirigami.Units.smallSpacing))
+    readonly property bool loading: plasmoidItem.loading
+    property bool refreshFlash: false
 
     hoverEnabled: true
+    acceptedButtons: Qt.LeftButton | Qt.MiddleButton
     activeFocusOnTab: true
 
     Layout.minimumWidth: horizontalPanel ? Kirigami.Units.gridUnit * 3 : Kirigami.Units.iconSizes.small
@@ -35,17 +38,67 @@ MouseArea {
         case Qt.Key_Enter:
         case Qt.Key_Return:
         case Qt.Key_Select:
-            compactRoot.plasmoidItem.expanded = !compactRoot.plasmoidItem.expanded
-            event.accepted = true
-            break
+            compactRoot.plasmoidItem.expanded = !compactRoot.plasmoidItem.expanded;
+            event.accepted = true;
+            break;
         }
     }
 
     onClicked: mouse => {
         if (mouse.button === Qt.LeftButton) {
-            plasmoidItem.expanded = !plasmoidItem.expanded
+            plasmoidItem.expanded = !plasmoidItem.expanded;
         } else if (mouse.button === Qt.MiddleButton) {
-            plasmoidItem.refreshWeather()
+            compactRoot.refreshFlash = true;
+            refreshFlashTimer.restart();
+            plasmoidItem.refreshWeather();
+        }
+    }
+
+    Timer {
+        id: refreshFlashTimer
+
+        interval: Kirigami.Units.humanMoment
+        onTriggered: compactRoot.refreshFlash = false
+    }
+
+    SequentialAnimation {
+        id: loadingPulse
+
+        loops: Animation.Infinite
+        running: compactRoot.loading
+        onRunningChanged: {
+            if (!running)
+                weatherIcon.opacity = 1;
+        }
+
+        NumberAnimation {
+            target: weatherIcon
+            property: "opacity"
+            from: 1
+            to: 0.35
+            duration: Kirigami.Units.longDuration
+            easing.type: Easing.InOutQuad
+        }
+        NumberAnimation {
+            target: weatherIcon
+            property: "opacity"
+            from: 0.35
+            to: 1
+            duration: Kirigami.Units.longDuration
+            easing.type: Easing.InOutQuad
+        }
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        radius: Kirigami.Units.smallSpacing
+        color: Kirigami.Theme.highlightColor
+        opacity: compactRoot.refreshFlash ? 0.35 : 0
+
+        Behavior on opacity {
+            NumberAnimation {
+                duration: Kirigami.Units.shortDuration
+            }
         }
     }
 
@@ -58,6 +111,8 @@ MouseArea {
         spacing: Math.max(2, Kirigami.Units.smallSpacing)
 
         Kirigami.Icon {
+            id: weatherIcon
+
             source: compactRoot.plasmoidItem.weatherIcon
             active: compactRoot.containsMouse
             Layout.alignment: Qt.AlignVCenter

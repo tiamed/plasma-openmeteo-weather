@@ -1,0 +1,24 @@
+# Generated gettext template (rebuild with: scripts/build-locales.py extract)
+po/*.pot
+
+# Unused gettext install tree; runtime catalogs live in contents/ui/LocaleData.js
+contents/locale/
+
+# Local tooling / IDE
+.omo/
+.codegraph/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+.directory
+
+# Backup / merge artifacts
+*.bak
+*.orig
+*.rej

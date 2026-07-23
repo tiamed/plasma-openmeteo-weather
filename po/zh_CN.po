@@ -1,0 +1,479 @@
+# Chinese translations for Open-Meteo Weather Card.
+# Copyright (C) The package authors.
+# This file is distributed under the same license as the package.
+msgid ""
+msgstr ""
+"Project-Id-Version: plasma_applet_com.local.openmeteo.weathercard\n"
+"Report-Msgid-Bugs-To: https://github.com/tiamed/plasma-openmeteo-weather/"
+"issues\n"
+"POT-Creation-Date: 2026-07-23 14:59\n"
+"PO-Revision-Date: 2026-07-23 14:57\n"
+"Last-Translator: tiamed\n"
+"Language-Team: Chinese (Simplified)\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+msgid "%1 %2"
+msgstr "%1 %2"
+
+msgid "%1 / %2"
+msgstr "%1 / %2"
+
+msgid "%1 Weather"
+msgstr "%1 天气"
+
+msgid "%1 rain, %2 wind"
+msgstr "降水 %1，风速 %2"
+
+msgid "%1 trend chart"
+msgstr "%1 趋势图"
+
+msgid "%1 · %2"
+msgstr "%1 · %2"
+
+msgid "%1 · PM2.5 %2"
+msgstr "%1 · PM2.5 %2"
+
+msgid "%1, %2"
+msgstr "%1，%2"
+
+msgid "%1, %2, %3"
+msgstr "%1，%2，%3"
+
+msgid "%1, %2, high %3, low %4"
+msgstr "%1，%2，最高 %3，最低 %4"
+
+msgid "%1, feels like %2"
+msgstr "%1，体感 %2"
+
+msgid "%1: %2"
+msgstr "%1：%2"
+
+msgid "24 hours"
+msgstr "24 小时"
+
+msgid "7 days"
+msgstr "7 天"
+
+msgid "Actual"
+msgstr "实际"
+
+msgid "Actual %1 · feels %2"
+msgstr "实际 %1 · 体感 %2"
+
+msgid "Air quality"
+msgstr "空气质量"
+
+msgid "Average"
+msgstr "平均"
+
+msgid "Back"
+msgstr "返回"
+
+msgid "Celsius"
+msgstr "摄氏度"
+
+msgid "City or label"
+msgstr "城市或备注"
+
+msgid "Clear"
+msgstr "晴"
+
+msgid "Condition"
+msgstr "天气状况"
+
+msgid "Conditions"
+msgstr "气象条件"
+
+msgid "Configure…"
+msgstr "配置…"
+
+msgid "Could not determine current location."
+msgstr "无法获取当前位置。"
+
+msgid "Could not read location results."
+msgstr "无法解析位置搜索结果。"
+
+msgid "Could not read the Open-Meteo response."
+msgstr "无法解析 Open-Meteo 响应。"
+
+msgid "Current location (%1, %2)"
+msgstr "当前位置（%1，%2）"
+
+msgid "Daily Report"
+msgstr "每日预报"
+
+msgid "Daily details"
+msgstr "每日详情"
+
+msgid "Daily rain"
+msgstr "日降水量"
+
+msgid "Drizzle"
+msgstr "毛毛雨"
+
+msgid "European AQI %1 (%2)"
+msgstr "欧洲 AQI %1（%2）"
+
+msgid "Extremely poor"
+msgstr "极差"
+
+msgid "Fahrenheit"
+msgstr "华氏度"
+
+msgid "Fair"
+msgstr "良"
+
+msgid "Feels"
+msgstr "体感"
+
+msgid "Feels like"
+msgstr "体感"
+
+msgid "Feels range"
+msgstr "体感范围"
+
+msgid "Feels-like high and low for the selected day"
+msgstr "所选日期的体感最高/最低"
+
+msgid "Feels-like range for the selected day"
+msgstr "所选日期的体感温度范围"
+
+msgid "Find"
+msgstr "查找"
+
+msgid "Fog"
+msgstr "雾"
+
+msgid "Forecast range: %1–%2"
+msgstr "预报范围：%1–%2"
+
+msgid "Freezing drizzle"
+msgstr "冻毛毛雨"
+
+msgid "Freezing rain"
+msgstr "冻雨"
+
+msgid "Good"
+msgstr "优"
+
+msgid "High"
+msgstr "最高"
+
+msgid "High %1"
+msgstr "最高 %1"
+
+msgid "High / low"
+msgstr "最高 / 最低"
+
+msgid "Highest chance: %1 at %2"
+msgstr "最高降水概率：%1（%2）"
+
+msgid "Hourly Report"
+msgstr "每小时预报"
+
+msgid "Hourly details"
+msgstr "每小时详情"
+
+msgid "Humidity"
+msgstr "湿度"
+
+msgid "Icons:"
+msgstr "图标："
+
+msgid "Language:"
+msgstr "语言："
+
+msgid "Latitude or longitude is invalid."
+msgstr "纬度或经度无效。"
+
+msgid "Latitude:"
+msgstr "纬度："
+
+msgid "Locating…"
+msgstr "定位中…"
+
+msgid "Location access denied."
+msgstr "定位权限被拒绝。"
+
+msgid "Location name:"
+msgstr "位置名称："
+
+msgid "Location search failed (%1)."
+msgstr "位置搜索失败（%1）。"
+
+msgid "Location services unavailable."
+msgstr "定位服务不可用。"
+
+msgid "Longitude:"
+msgstr "经度："
+
+msgid "Low"
+msgstr "最低"
+
+msgid "Low %1"
+msgstr "最低 %1"
+
+msgid "Max wind"
+msgstr "最大风速"
+
+msgid "Meteocons Fill"
+msgstr "Meteocons 填充"
+
+msgid "Meteocons Flat"
+msgstr "Meteocons 扁平"
+
+msgid "Meteocons Line"
+msgstr "Meteocons 线条"
+
+msgid "Meteocons Monochrome"
+msgstr "Meteocons 单色"
+
+msgid "Metric details"
+msgstr "指标详情"
+
+msgid "Moderate"
+msgstr "中等"
+
+msgid "Mostly clear"
+msgstr "晴间多云"
+
+msgid "Never"
+msgstr "从未"
+
+msgid "Next"
+msgstr "下一个"
+
+msgid "Next 24 hours"
+msgstr "未来 24 小时"
+
+msgid "Next 7 days"
+msgstr "未来 7 天"
+
+msgid "No matching locations."
+msgstr "未找到匹配位置。"
+
+msgid "No network connection. Will retry on the next refresh."
+msgstr "无网络连接，将在下次刷新时重试。"
+
+msgid "No weather data yet"
+msgstr "暂无天气数据"
+
+msgid "Now"
+msgstr "现在"
+
+msgid "Open-Meteo"
+msgstr "Open-Meteo"
+
+msgid "Open-Meteo request failed (%1)."
+msgstr "Open-Meteo 请求失败（%1）。"
+
+msgid "Overcast"
+msgstr "阴"
+
+msgid "Partly cloudy"
+msgstr "多云"
+
+msgid "Peak AQI: %1 (%2) at %3"
+msgstr "AQI 峰值：%1（%2，%3）"
+
+msgid "Peak UV: %1 (%2) at %3"
+msgstr "紫外线峰值：%1（%2，%3）"
+
+msgid "Poor"
+msgstr "较差"
+
+msgid "Previous"
+msgstr "上一个"
+
+msgid "Rain"
+msgstr "降水"
+
+msgid "Rain %1"
+msgstr "降水 %1"
+
+msgid "Rain amount"
+msgstr "降水量"
+
+msgid "Rain chance"
+msgstr "降水概率"
+
+msgid "Rain showers"
+msgstr "阵雨"
+
+msgid "Refresh"
+msgstr "刷新"
+
+msgid "Refresh Weather"
+msgstr "刷新天气"
+
+msgid "Refresh:"
+msgstr "刷新间隔："
+
+msgid "Request timed out. Will retry on the next refresh."
+msgstr "请求超时，将在下次刷新时重试。"
+
+msgid "Results:"
+msgstr "结果："
+
+msgid "Retry"
+msgstr "重试"
+
+msgid "Search city"
+msgstr "搜索城市"
+
+msgid "Search:"
+msgstr "搜索："
+
+msgid "Searching..."
+msgstr "正在搜索…"
+
+msgid "Selected day"
+msgstr "当前日期"
+
+msgid "Selected hour"
+msgstr "当前小时"
+
+msgid "Show temperature text in horizontal panels"
+msgstr "在水平面板中显示温度文字"
+
+msgid "Snow"
+msgstr "雪"
+
+msgid "Snow grains"
+msgstr "雪粒"
+
+msgid "Snow showers"
+msgstr "阵雪"
+
+msgid "Strongest forecast: %1 at %2"
+msgstr "最大风速：%1（%2）"
+
+msgid "Sun"
+msgstr "日出日落"
+
+msgid "Sun times across the next 7 days"
+msgstr "未来 7 天的日出日落"
+
+msgid "Sunrise"
+msgstr "日出"
+
+msgid "Sunset"
+msgstr "日落"
+
+msgid "System default"
+msgstr "跟随系统"
+
+msgid "System icon theme"
+msgstr "系统图标主题"
+
+msgid "Temp %1"
+msgstr "气温 %1"
+
+msgid "Temperature"
+msgstr "气温"
+
+msgid "Temperature Range"
+msgstr "气温范围"
+
+msgid "Thunderstorm"
+msgstr "雷暴"
+
+msgid "Thunderstorm with hail"
+msgstr "雷暴伴冰雹"
+
+msgid "Today"
+msgstr "今天"
+
+msgid "Tomorrow"
+msgstr "明天"
+
+msgid "Total forecast: %1"
+msgstr "累计降水量：%1"
+
+msgid "Trend"
+msgstr "趋势"
+
+msgid "Type at least two characters."
+msgstr "请至少输入两个字符。"
+
+msgid "UV"
+msgstr "紫外线"
+
+msgid "UV index"
+msgstr "紫外线指数"
+
+msgid "Units:"
+msgstr "单位："
+
+msgid "Unnamed location"
+msgstr "未命名位置"
+
+msgid "Update failed: %1"
+msgstr "更新失败：%1"
+
+msgid "Updated %1"
+msgstr "更新于 %1"
+
+msgid "Use current location"
+msgstr "使用当前位置"
+
+msgid "Very poor"
+msgstr "差"
+
+msgid "Waiting for weather data"
+msgstr "正在等待天气数据"
+
+msgid "Weather"
+msgstr "天气"
+
+msgid "Weather changes across the next %1"
+msgstr "未来%1的天气变化"
+
+msgid "Weather unavailable"
+msgstr "天气不可用"
+
+msgid "Wind"
+msgstr "风速"
+
+msgid "extreme risk"
+msgstr "极高风险"
+
+msgid "high risk"
+msgstr "高风险"
+
+msgid "low risk"
+msgstr "低风险"
+
+msgid "moderate risk"
+msgstr "中等风险"
+
+msgid "very high risk"
+msgstr "很高风险"
+
+#~ msgid "%1 minute"
+#~ msgstr "%1 分钟"
+
+#~ msgid "%1 minutes"
+#~ msgstr "%1 分钟"
+
+#~ msgid "Day"
+#~ msgstr "白天"
+
+#~ msgid "Daylight"
+#~ msgstr "昼夜"
+
+#~ msgid "English"
+#~ msgstr "English"
+
+#~ msgid "Night"
+#~ msgstr "夜间"
+
+#~ msgid "Selected phase: %1"
+#~ msgstr "当前阶段：%1"
+
+#~ msgid "Simplified Chinese"
+#~ msgstr "简体中文"

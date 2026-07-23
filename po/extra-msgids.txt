@@ -1,0 +1,8 @@
+# Extra msgids that are translated via dynamic tr(key) lookups.
+# One English source string per line. Lines starting with # are ignored.
+Good
+Fair
+Moderate
+Poor
+Very poor
+Extremely poor

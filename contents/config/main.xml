@@ -36,5 +36,9 @@
       <label>Show temperature text next to the icon in a horizontal panel.</label>
       <default>true</default>
     </entry>
+    <entry name="uiLanguage" type="String">
+      <label>Widget UI language.</label>
+      <default>system</default>
+    </entry>
   </group>
 </kcfg>

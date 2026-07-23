@@ -9,11 +9,13 @@
         ],
         "Category": "Online Services",
         "Description": "Panel-friendly weather card powered by Open-Meteo",
+        "Description[zh_CN]": "由 Open-Meteo 提供数据的 Plasma 6 面板天气部件",
         "EnabledByDefault": true,
         "Icon": "weather-clear",
         "Id": "com.local.openmeteo.weathercard",
         "License": "GPL-3.0-or-later",
         "Name": "Open-Meteo Weather Card",
+        "Name[zh_CN]": "Open-Meteo 天气卡片",
         "Version": "0.1.0",
         "Website": "https://github.com/tiamed/plasma-openmeteo-weather"
     },

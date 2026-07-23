@@ -9,15 +9,29 @@ Rectangle {
     required property string label
     required property string value
     property string iconName: ""
+    property string conditionKey: ""
     property bool highlighted: false
     readonly property bool fileIcon: iconName.startsWith("file:") || iconName.startsWith("/")
+    readonly property bool hovered: cardMouse.containsMouse
+
+    signal activated()
 
     implicitWidth: Kirigami.Units.gridUnit * 10
     implicitHeight: Kirigami.Units.gridUnit * 3.4
-    color: highlighted ? Kirigami.ColorUtils.tintWithAlpha(Kirigami.Theme.backgroundColor, Kirigami.Theme.highlightColor, 0.18) : Kirigami.Theme.alternateBackgroundColor
+    color: highlighted
+        ? Kirigami.ColorUtils.tintWithAlpha(Kirigami.Theme.backgroundColor, Kirigami.Theme.highlightColor, hovered ? 0.32 : 0.18)
+        : (hovered
+            ? Kirigami.ColorUtils.tintWithAlpha(Kirigami.Theme.alternateBackgroundColor, Kirigami.Theme.textColor, 0.07)
+            : Kirigami.Theme.alternateBackgroundColor)
     radius: Kirigami.Units.smallSpacing
-    border.width: highlighted ? 1 : 0
-    border.color: Kirigami.Theme.highlightColor
+    border.width: cardMouse.activeFocus ? 2 : (highlighted ? 1 : 0)
+    border.color: cardMouse.activeFocus ? Kirigami.Theme.focusColor : Kirigami.Theme.highlightColor
+
+    Behavior on color {
+        ColorAnimation {
+            duration: Kirigami.Units.shortDuration
+        }
+    }
 
     RowLayout {
         anchors.fill: parent
@@ -64,9 +78,31 @@ Rectangle {
                 elide: Text.ElideRight
                 Layout.fillWidth: true
             }
-
         }
-
     }
 
+    MouseArea {
+        id: cardMouse
+
+        anchors.fill: parent
+        hoverEnabled: true
+        activeFocusOnTab: true
+        cursorShape: Qt.PointingHandCursor
+        Accessible.role: Accessible.Button
+        Accessible.name: root.label + ": " + root.value
+        Accessible.onPressAction: root.activated()
+        Keys.onPressed: event => {
+            switch (event.key) {
+            case Qt.Key_Space:
+            case Qt.Key_Enter:
+            case Qt.Key_Return:
+            case Qt.Key_Select:
+                root.activated();
+                event.accepted = true;
+                break;
+            }
+        }
+        onPressed: forceActiveFocus()
+        onClicked: root.activated()
+    }
 }

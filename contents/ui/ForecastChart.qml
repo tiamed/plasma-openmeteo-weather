@@ -1,5 +1,7 @@
 import QtQuick
+import QtQuick.Shapes
 import org.kde.kirigami as Kirigami
+import org.kde.plasma.components as PlasmaComponents3
 
 Item {
     id: root
@@ -7,6 +9,28 @@ Item {
     required property var plasmoidItem
     property var model: []
     property string chartMode: "hourly"
+    property int hoveredIndex: -1
+
+    signal pointActivated(var item)
+
+    readonly property real chartTop: Kirigami.Units.smallSpacing
+    readonly property real chartLeft: Kirigami.Units.gridUnit * 1.7
+    readonly property real chartRight: Kirigami.Units.smallSpacing
+    readonly property real labelHeight: Kirigami.Units.gridUnit * 1.25
+    readonly property real chartBottom: labelHeight + Kirigami.Units.smallSpacing
+    readonly property real plotWidth: Math.max(1, width - chartLeft - chartRight)
+    readonly property real plotHeight: Math.max(1, height - chartTop - chartBottom)
+    readonly property real minTemp: computeMinTemperature()
+    readonly property real maxTemp: computeMaxTemperature()
+    readonly property real paddedLow: minTemp - Math.max(1, (maxTemp - minTemp) * 0.12)
+    readonly property real paddedHigh: maxTemp + Math.max(1, (maxTemp - minTemp) * 0.12)
+    readonly property real labelFontSize: Math.max(10, Kirigami.Units.gridUnit * 0.58)
+    readonly property var hoveredItem: hoveredIndex >= 0 && hoveredIndex < model.length ? model[hoveredIndex] : null
+
+    readonly property var highPoints: pointsForField("temperature_2m_max")
+    readonly property var lowPoints: pointsForField("temperature_2m_min")
+    readonly property var hourlyPoints: pointsForField("temperature_2m")
+    readonly property string bandSvg: bandSvgPath()
 
     function numberAt(item, fieldName) {
         const value = Number(item ? item[fieldName] : undefined);
@@ -21,48 +45,54 @@ Item {
                 const high = numberAt(model[index], "temperature_2m_max");
                 if (Number.isFinite(low))
                     values.push(low);
-
                 if (Number.isFinite(high))
                     values.push(high);
-
             } else {
                 const value = numberAt(model[index], "temperature_2m");
                 if (Number.isFinite(value))
                     values.push(value);
-
             }
         }
         return values;
     }
 
-    function minTemperature() {
+    function computeMinTemperature() {
         const values = temperatureValues();
         let result = Number.POSITIVE_INFINITY;
-        for (let index = 0; index < values.length; index++) {
+        for (let index = 0; index < values.length; index++)
             result = Math.min(result, values[index]);
-        }
         return Number.isFinite(result) ? result : 0;
     }
 
-    function maxTemperature() {
+    function computeMaxTemperature() {
         const values = temperatureValues();
         let result = Number.NEGATIVE_INFINITY;
-        for (let index = 0; index < values.length; index++) {
+        for (let index = 0; index < values.length; index++)
             result = Math.max(result, values[index]);
-        }
         return Number.isFinite(result) ? result : 1;
     }
 
-    function yFor(value, top, chartHeight, minValue, maxValue) {
-        const range = Math.max(1, maxValue - minValue);
-        return top + chartHeight - ((value - minValue) / range) * chartHeight;
+    function yFor(value) {
+        const range = Math.max(1, paddedHigh - paddedLow);
+        return chartTop + plotHeight - ((value - paddedLow) / range) * plotHeight;
     }
 
-    function xFor(index, left, chartWidth) {
+    function xFor(index) {
         if (model.length <= 1)
-            return left + chartWidth / 2;
+            return chartLeft + plotWidth / 2;
 
-        return left + chartWidth * index / (model.length - 1);
+        return chartLeft + plotWidth * index / (model.length - 1);
+    }
+
+    function markerY(index) {
+        if (index < 0 || index >= model.length)
+            return chartTop + plotHeight / 2;
+        if (chartMode === "daily") {
+            const high = numberAt(model[index], "temperature_2m_max");
+            return Number.isFinite(high) ? yFor(high) : chartTop + plotHeight / 2;
+        }
+        const value = numberAt(model[index], "temperature_2m");
+        return Number.isFinite(value) ? yFor(value) : chartTop + plotHeight / 2;
     }
 
     function labelFor(item, index) {
@@ -80,120 +110,312 @@ Item {
         return Number.isFinite(probability) ? Math.max(0, Math.min(100, probability)) : 0;
     }
 
+    function tooltipTitle(item) {
+        if (!item)
+            return "";
+        return chartMode === "daily" ? plasmoidItem.dailyPrimaryLabel(item.date) : plasmoidItem.hourLabel(item.time);
+    }
+
+    function tooltipWeatherDescription(item) {
+        return item ? plasmoidItem.weatherDescription(item.weather_code) : "";
+    }
+
+    function tooltipTempValue(item) {
+        if (!item)
+            return "";
+        if (chartMode === "daily")
+            return plasmoidItem.trf("%1 / %2", plasmoidItem.formatTemperature(item.temperature_2m_max, false), plasmoidItem.formatTemperature(item.temperature_2m_min, true));
+        return plasmoidItem.formatTemperature(item.temperature_2m, true);
+    }
+
+    function tooltipHighValue(item) {
+        if (!item)
+            return "";
+        return plasmoidItem.formatTemperature(item.temperature_2m_max, true);
+    }
+
+    function tooltipLowValue(item) {
+        if (!item)
+            return "";
+        return plasmoidItem.formatTemperature(item.temperature_2m_min, true);
+    }
+
+    function tooltipRainValue(item) {
+        if (!item)
+            return "";
+        const probability = item[chartMode === "daily" ? "precipitation_probability_max" : "precipitation_probability"];
+        return plasmoidItem.formatPercent(probability);
+    }
+
+    function indexAtX(xPos) {
+        if (model.length === 0 || xPos < chartLeft || xPos > chartLeft + plotWidth)
+            return -1;
+        if (model.length === 1)
+            return 0;
+        const ratio = (xPos - chartLeft) / plotWidth;
+        return Math.max(0, Math.min(model.length - 1, Math.round(ratio * (model.length - 1))));
+    }
+
+    function pointsForField(fieldName) {
+        const _deps = [width, height, model, chartMode, paddedLow, paddedHigh];
+        void _deps;
+        const points = [];
+        for (let index = 0; index < model.length; index++) {
+            const value = numberAt(model[index], fieldName);
+            if (!Number.isFinite(value))
+                continue;
+            points.push(Qt.point(xFor(index), yFor(value)));
+        }
+        return points;
+    }
+
+    function bandSvgPath() {
+        const _deps = [width, height, model, chartMode, paddedLow, paddedHigh];
+        void _deps;
+        if (chartMode !== "daily" || model.length === 0)
+            return "";
+
+        let path = "";
+        for (let index = 0; index < model.length; index++) {
+            const highValue = numberAt(model[index], "temperature_2m_max");
+            const x = xFor(index);
+            const y = yFor(highValue);
+            path += (index === 0 ? "M " : " L ") + x + " " + y;
+        }
+        for (let index = model.length - 1; index >= 0; index--) {
+            const lowValue = numberAt(model[index], "temperature_2m_min");
+            path += " L " + xFor(index) + " " + yFor(lowValue);
+        }
+        return path + " Z";
+    }
+
     implicitHeight: Kirigami.Units.gridUnit * 8
-    onModelChanged: chart.requestPaint()
-    onChartModeChanged: chart.requestPaint()
-    onWidthChanged: chart.requestPaint()
-    onHeightChanged: chart.requestPaint()
 
-    Canvas {
-        id: chart
+    Repeater {
+        model: 3
 
-        anchors.fill: parent
-        onPaint: {
-            const ctx = getContext("2d");
-            const widthPx = width;
-            const heightPx = height;
-            const top = Kirigami.Units.smallSpacing;
-            const left = Kirigami.Units.gridUnit * 1.7;
-            const right = Kirigami.Units.smallSpacing;
-            const labelHeight = Kirigami.Units.gridUnit * 1.25;
-            const bottom = labelHeight + Kirigami.Units.smallSpacing;
-            const chartWidth = Math.max(1, widthPx - left - right);
-            const chartHeight = Math.max(1, heightPx - top - bottom);
-            const low = root.minTemperature();
-            const high = root.maxTemperature();
-            const paddedLow = low - Math.max(1, (high - low) * 0.12);
-            const paddedHigh = high + Math.max(1, (high - low) * 0.12);
-            ctx.clearRect(0, 0, widthPx, heightPx);
-            ctx.lineWidth = 1;
-            ctx.strokeStyle = Kirigami.ColorUtils.linearInterpolation(Kirigami.Theme.textColor, Kirigami.Theme.backgroundColor, 0.78);
-            ctx.fillStyle = Kirigami.Theme.textColor;
-            ctx.globalAlpha = 0.62;
-            ctx.font = Math.max(10, Kirigami.Units.gridUnit * 0.58) + "px sans-serif";
-            ctx.textAlign = "right";
-            ctx.textBaseline = "middle";
-            for (let step = 0; step < 3; step++) {
-                const value = paddedLow + (paddedHigh - paddedLow) * step / 2;
-                const y = yFor(value, top, chartHeight, paddedLow, paddedHigh);
-                ctx.beginPath();
-                ctx.moveTo(left, y);
-                ctx.lineTo(left + chartWidth, y);
-                ctx.stroke();
-                ctx.fillText(root.plasmoidItem.formatTemperature(value, false), left - Kirigami.Units.smallSpacing, y);
-            }
-            ctx.globalAlpha = 0.18;
-            ctx.fillStyle = Kirigami.Theme.highlightColor;
-            for (let index = 0; index < root.model.length; index++) {
-                const precipitation = precipitationFor(root.model[index]);
-                const barWidth = Math.max(3, chartWidth / Math.max(8, root.model.length) * 0.42);
-                const barHeight = chartHeight * precipitation / 100;
-                const x = xFor(index, left, chartWidth) - barWidth / 2;
-                ctx.fillRect(x, top + chartHeight - barHeight, barWidth, barHeight);
-            }
-            if (root.chartMode === "daily") {
-                ctx.globalAlpha = 0.22;
-                ctx.fillStyle = Kirigami.Theme.highlightColor;
-                ctx.beginPath();
-                for (let index = 0; index < root.model.length; index++) {
-                    const highValue = numberAt(root.model[index], "temperature_2m_max");
-                    const x = xFor(index, left, chartWidth);
-                    const y = yFor(highValue, top, chartHeight, paddedLow, paddedHigh);
-                    if (index === 0)
-                        ctx.moveTo(x, y);
-                    else
-                        ctx.lineTo(x, y);
-                }
-                for (let index = root.model.length - 1; index >= 0; index--) {
-                    const lowValue = numberAt(root.model[index], "temperature_2m_min");
-                    const x = xFor(index, left, chartWidth);
-                    const y = yFor(lowValue, top, chartHeight, paddedLow, paddedHigh);
-                    ctx.lineTo(x, y);
-                }
-                ctx.closePath();
-                ctx.fill();
-            }
-            const drawLine = function drawLine(fieldName, color, alpha) {
-                ctx.globalAlpha = alpha;
-                ctx.strokeStyle = color;
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                let hasPoint = false;
-                for (let index = 0; index < root.model.length; index++) {
-                    const value = numberAt(root.model[index], fieldName);
-                    if (!Number.isFinite(value))
-                        continue;
+        delegate: Item {
+            required property int index
+            readonly property real value: root.paddedLow + (root.paddedHigh - root.paddedLow) * index / 2
+            readonly property real lineY: root.yFor(value)
 
-                    const x = xFor(index, left, chartWidth);
-                    const y = yFor(value, top, chartHeight, paddedLow, paddedHigh);
-                    if (!hasPoint) {
-                        ctx.moveTo(x, y);
-                        hasPoint = true;
-                    } else {
-                        ctx.lineTo(x, y);
-                    }
-                }
-                ctx.stroke();
-            };
-            if (root.chartMode === "daily") {
-                drawLine("temperature_2m_max", Kirigami.Theme.highlightColor, 0.95);
-                drawLine("temperature_2m_min", Kirigami.Theme.textColor, 0.42);
-            } else {
-                drawLine("temperature_2m", Kirigami.Theme.highlightColor, 0.95);
+            Rectangle {
+                x: root.chartLeft
+                y: lineY
+                width: root.plotWidth
+                height: 1
+                color: Kirigami.ColorUtils.linearInterpolation(Kirigami.Theme.textColor, Kirigami.Theme.backgroundColor, 0.78)
+                opacity: 0.62
             }
-            ctx.globalAlpha = 0.72;
-            ctx.fillStyle = Kirigami.Theme.textColor;
-            ctx.font = Math.max(10, Kirigami.Units.gridUnit * 0.58) + "px sans-serif";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "top";
-            for (let index = 0; index < root.model.length; index++) {
-                const label = labelFor(root.model[index], index);
-                if (label.length === 0)
-                    continue;
 
-                ctx.fillText(label, xFor(index, left, chartWidth), heightPx - labelHeight);
+            Text {
+                x: 0
+                y: lineY - height / 2
+                width: root.chartLeft - Kirigami.Units.smallSpacing
+                horizontalAlignment: Text.AlignRight
+                text: root.plasmoidItem.formatTemperature(value, false)
+                color: Kirigami.Theme.textColor
+                opacity: 0.62
+                font.pixelSize: root.labelFontSize
             }
         }
     }
 
+    Repeater {
+        model: root.model
+
+        delegate: Rectangle {
+            required property var modelData
+            required property int index
+            readonly property real precipitation: root.precipitationFor(modelData)
+            readonly property real barWidth: Math.max(3, root.plotWidth / Math.max(8, root.model.length) * 0.42)
+            readonly property real barHeight: root.plotHeight * precipitation / 100
+
+            x: root.xFor(index) - barWidth / 2
+            y: root.chartTop + root.plotHeight - barHeight
+            width: barWidth
+            height: barHeight
+            color: Kirigami.Theme.highlightColor
+            opacity: root.hoveredIndex === index ? 0.32 : 0.18
+        }
+    }
+
+    Shape {
+        anchors.fill: parent
+        visible: root.chartMode === "daily" && root.bandSvg.length > 0
+        preferredRendererType: Shape.CurveRenderer
+
+        ShapePath {
+            fillColor: Qt.alpha(Kirigami.Theme.highlightColor, 0.22)
+            strokeWidth: -1
+
+            PathSvg {
+                path: root.bandSvg
+            }
+        }
+    }
+
+    Shape {
+        anchors.fill: parent
+        visible: root.chartMode === "daily"
+        preferredRendererType: Shape.CurveRenderer
+
+        ShapePath {
+            strokeWidth: 2
+            strokeColor: Qt.alpha(Kirigami.Theme.highlightColor, 0.95)
+            fillColor: "transparent"
+            capStyle: ShapePath.RoundCap
+            joinStyle: ShapePath.RoundJoin
+
+            PathPolyline {
+                path: root.highPoints
+            }
+        }
+
+        ShapePath {
+            strokeWidth: 2
+            strokeColor: Qt.alpha(Kirigami.Theme.textColor, 0.42)
+            fillColor: "transparent"
+            capStyle: ShapePath.RoundCap
+            joinStyle: ShapePath.RoundJoin
+
+            PathPolyline {
+                path: root.lowPoints
+            }
+        }
+    }
+
+    Shape {
+        anchors.fill: parent
+        visible: root.chartMode === "hourly"
+        preferredRendererType: Shape.CurveRenderer
+
+        ShapePath {
+            strokeWidth: 2
+            strokeColor: Qt.alpha(Kirigami.Theme.highlightColor, 0.95)
+            fillColor: "transparent"
+            capStyle: ShapePath.RoundCap
+            joinStyle: ShapePath.RoundJoin
+
+            PathPolyline {
+                path: root.hourlyPoints
+            }
+        }
+    }
+
+    Repeater {
+        model: root.model
+
+        delegate: Text {
+            required property var modelData
+            required property int index
+            readonly property string label: root.labelFor(modelData, index)
+
+            visible: label.length > 0
+            x: root.xFor(index) - width / 2
+            y: root.height - root.labelHeight
+            text: label
+            color: Kirigami.Theme.textColor
+            opacity: root.hoveredIndex === index ? 1 : 0.72
+            font.pixelSize: root.labelFontSize
+            font.bold: root.hoveredIndex === index
+            horizontalAlignment: Text.AlignHCenter
+        }
+    }
+
+    Rectangle {
+        visible: root.hoveredIndex >= 0
+        x: root.xFor(root.hoveredIndex) - width / 2
+        y: root.markerY(root.hoveredIndex) - height / 2
+        width: Math.max(6, Kirigami.Units.smallSpacing * 1.8)
+        height: width
+        radius: width / 2
+        color: Kirigami.Theme.highlightColor
+        border.width: 1
+        border.color: Kirigami.Theme.backgroundColor
+        z: 2
+    }
+
+    Rectangle {
+        id: tooltipCard
+
+        readonly property int padH: Kirigami.Units.smallSpacing * 2
+        readonly property int padV: Kirigami.Units.smallSpacing
+        readonly property real maxWidth: root.width
+
+        Kirigami.Theme.colorSet: Kirigami.Theme.Tooltip
+        Kirigami.Theme.inherit: false
+        visible: root.hoveredIndex >= 0 && root.hoveredItem
+        z: 10
+        width: Math.min(maxWidth, tooltipLabel.implicitWidth + padH * 2)
+        height: tooltipLabel.implicitHeight + padV * 2
+        radius: Kirigami.Units.cornerRadius
+        color: Kirigami.Theme.backgroundColor
+        border.width: 1
+        border.color: Kirigami.ColorUtils.tintWithAlpha(Kirigami.Theme.backgroundColor, Kirigami.Theme.highlightColor, 0.4)
+        // Keep entirely inside the chart so it cannot sit under the hour strip below.
+        x: {
+            if (root.hoveredIndex < 0)
+                return 0;
+            const raw = root.xFor(root.hoveredIndex) - width / 2;
+            return Math.max(0, Math.min(root.width - width, raw));
+        }
+        y: {
+            if (root.hoveredIndex < 0)
+                return 0;
+            const gap = Math.max(2, Math.round(Kirigami.Units.smallSpacing / 2));
+            const marker = root.markerY(root.hoveredIndex);
+            let preferred = marker - height - gap;
+            if (preferred < 0)
+                preferred = marker + gap;
+            return Math.max(0, Math.min(root.height - height, preferred));
+        }
+
+        PlasmaComponents3.Label {
+            id: tooltipLabel
+
+            anchors.fill: parent
+            anchors.leftMargin: tooltipCard.padH
+            anchors.rightMargin: tooltipCard.padH
+            anchors.topMargin: tooltipCard.padV
+            anchors.bottomMargin: tooltipCard.padV
+            text: {
+                const item = root.hoveredItem;
+                if (!item)
+                    return "";
+                const lines = [root.tooltipTitle(item), root.tooltipWeatherDescription(item)];
+                if (root.chartMode === "daily") {
+                    lines.push(plasmoidItem.trf("High %1", root.tooltipHighValue(item)));
+                    lines.push(plasmoidItem.trf("Low %1", root.tooltipLowValue(item)));
+                } else {
+                    lines.push(plasmoidItem.trf("Temp %1", root.tooltipTempValue(item)));
+                }
+                lines.push(plasmoidItem.trf("Rain %1", root.tooltipRainValue(item)));
+                return lines.join("\n");
+            }
+            font: Kirigami.Theme.smallFont
+            wrapMode: Text.Wrap
+            clip: true
+            elide: Text.ElideRight
+            maximumLineCount: 6
+            lineHeight: 1.2
+            lineHeightMode: Text.ProportionalHeight
+            verticalAlignment: Text.AlignVCenter
+        }
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        hoverEnabled: true
+        cursorShape: root.hoveredIndex >= 0 ? Qt.PointingHandCursor : Qt.ArrowCursor
+        onPositionChanged: mouse => {
+            root.hoveredIndex = root.indexAtX(mouse.x);
+        }
+        onExited: root.hoveredIndex = -1
+        onClicked: mouse => {
+            const index = root.indexAtX(mouse.x);
+            if (index >= 0)
+                root.pointActivated(root.model[index]);
+        }
+    }
 }
