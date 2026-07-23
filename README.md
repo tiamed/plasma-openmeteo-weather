@@ -35,7 +35,7 @@ UI strings are translated from GNU gettext catalogs in `po/`. The widget still l
 - Run `scripts/build-locales.py compile` to regenerate `contents/ui/LocaleData.js`
 - Or run `scripts/build-locales.py sync` to extract new strings from QML, merge into `.po` files, and compile
 
-CI runs `scripts/build-locales.py check` on every push/PR: it validates `.po` files and fails if `LocaleData.js` is up of date. English is the source language and does not need a `.po` file.
+CI runs `scripts/build-locales.py check` on every push/PR: it validates `.po` files and fails if `LocaleData.js` is out of date. English is the source language and does not need a `.po` file.
 
 ## Releases
 
