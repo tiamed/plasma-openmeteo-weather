@@ -16,7 +16,7 @@
         "License": "GPL-3.0-or-later",
         "Name": "Open-Meteo Weather Card",
         "Name[zh_CN]": "Open-Meteo 天气卡片",
-        "Version": "0.1.0",
+        "Version": "0.2.0",
         "Website": "https://github.com/tiamed/plasma-openmeteo-weather"
     },
     "X-Plasma-API-Minimum-Version": "6.0"

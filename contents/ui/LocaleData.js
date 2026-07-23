@@ -2,7 +2,7 @@
 // Source of truth: po/*.po
 .pragma library
 
-var generatedAt = "2026-07-23T06:59:05Z";
+var generatedAt = "3505d1b5729f";
 var catalogs = {
   "zh_CN": {
     "%1 %2": "%1 %2",

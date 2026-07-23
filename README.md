@@ -35,7 +35,22 @@ UI strings are translated from GNU gettext catalogs in `po/`. The widget still l
 - Run `scripts/build-locales.py compile` to regenerate `contents/ui/LocaleData.js`
 - Or run `scripts/build-locales.py sync` to extract new strings from QML, merge into `.po` files, and compile
 
-English is the source language and does not need a `.po` file.
+CI runs `scripts/build-locales.py check` on every push/PR: it validates `.po` files and fails if `LocaleData.js` is up of date. English is the source language and does not need a `.po` file.
+
+## Releases
+
+Pushing a version tag publishes a GitHub Release with a `.plasmoid` asset:
+
+1. Bump `KPlugin.Version` in `metadata.json`
+2. Commit the change
+3. Tag and push, for example:
+
+```sh
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+You can also run the **Release** workflow manually from the Actions tab (`workflow_dispatch`). The tag version must match `metadata.json`.
 
 ## Credits and Licenses
 

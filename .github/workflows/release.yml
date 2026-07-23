@@ -1,0 +1,107 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to publish (e.g. v0.2.0). Leave empty to create from metadata.json Version."
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Package and publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gettext zip
+
+      - name: Check locale catalogs
+        run: python3 scripts/build-locales.py check
+
+      - name: Resolve version
+        id: meta
+        env:
+          INPUT_TAG: ${{ inputs.tag || '' }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          META_VERSION="$(python3 -c 'import json; print(json.load(open("metadata.json"))["KPlugin"]["Version"])')"
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            if [[ -n "${INPUT_TAG}" ]]; then
+              TAG="$INPUT_TAG"
+            else
+              TAG="v${META_VERSION}"
+              if ! git rev-parse "$TAG" >/dev/null 2>&1; then
+                git config user.name "github-actions[bot]"
+                git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                git tag -a "$TAG" -m "Release $TAG"
+                git push origin "$TAG"
+              fi
+            fi
+          else
+            TAG="$GITHUB_REF_NAME"
+          fi
+
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Tag must look like vX.Y.Z, got: $TAG" >&2
+            exit 1
+          fi
+
+          TAG_VERSION="${TAG#v}"
+          if [[ "$TAG_VERSION" != "$META_VERSION" ]]; then
+            echo "Tag version ($TAG_VERSION) does not match metadata.json Version ($META_VERSION)" >&2
+            exit 1
+          fi
+
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$TAG_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Resolved release $TAG (metadata $META_VERSION)"
+
+      - name: Package plasmoid
+        id: package
+        run: |
+          set -euo pipefail
+          chmod +x scripts/package-plasmoid.sh
+          ARTIFACT="$(scripts/package-plasmoid.sh dist)"
+          echo "artifact=$ARTIFACT" >> "$GITHUB_OUTPUT"
+          ls -lh "$ARTIFACT"
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.meta.outputs.tag }}
+          VERSION: ${{ steps.meta.outputs.version }}
+          ARTIFACT: ${{ steps.package.outputs.artifact }}
+        run: |
+          set -euo pipefail
+          TITLE="Plasma Open-Meteo Weather ${VERSION}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$ARTIFACT" --clobber
+            gh release edit "$TAG" --title "$TITLE"
+          else
+            gh release create "$TAG" "$ARTIFACT" \
+              --title "$TITLE" \
+              --generate-notes \
+              --verify-tag
+          fi
+          gh release view "$TAG"
