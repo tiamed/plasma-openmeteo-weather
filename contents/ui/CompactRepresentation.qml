@@ -23,7 +23,7 @@ MouseArea {
     activeFocusOnTab: true
 
     Layout.minimumWidth: horizontalPanel ? Kirigami.Units.gridUnit * 3 : Kirigami.Units.iconSizes.small
-    Layout.preferredWidth: showText ? Kirigami.Units.gridUnit * 5 : Kirigami.Units.iconSizes.smallMedium
+    Layout.preferredWidth: showText ? Kirigami.Units.gridUnit * 4 : Kirigami.Units.iconSizes.smallMedium
     Layout.maximumWidth: showText ? Kirigami.Units.gridUnit * 7 : Kirigami.Units.iconSizes.medium
     Layout.minimumHeight: verticalPanel ? width : Kirigami.Units.iconSizes.small
     Layout.preferredHeight: Kirigami.Units.iconSizes.smallMedium
