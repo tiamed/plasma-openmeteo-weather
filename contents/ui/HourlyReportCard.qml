@@ -10,9 +10,13 @@ Rectangle {
     required property var modelData
     required property bool selected
     required property real cardWidth
+    property bool past: false
+    readonly property string hourText: plasmoidItem.hourLabel(modelData.time)
+    readonly property bool dayStart: new Date(modelData.time).getHours() === 0 && hourText !== plasmoidItem.tr("Now")
     signal activated()
 
     width: cardWidth
+    opacity: past && !selected ? 0.6 : 1
     radius: Kirigami.Units.smallSpacing
     color: selected
         ? Kirigami.ColorUtils.tintWithAlpha(Kirigami.Theme.backgroundColor, Kirigami.Theme.highlightColor, 0.28)
@@ -34,8 +38,8 @@ Rectangle {
         spacing: 0
 
         PlasmaComponents3.Label {
-            text: root.plasmoidItem.hourLabel(root.modelData.time)
-            font.bold: root.selected
+            text: root.dayStart ? root.plasmoidItem.dailyPrimaryLabel(String(root.modelData.time).slice(0, 10)) : root.hourText
+            font.bold: root.selected || root.dayStart
             horizontalAlignment: Text.AlignHCenter
             maximumLineCount: 1
             elide: Text.ElideRight

@@ -20,7 +20,7 @@ Flickable {
     contentWidth: cardRow.implicitWidth
     contentHeight: height
     flickableDirection: Flickable.HorizontalFlick
-    boundsBehavior: Flickable.DragAndOvershootBounds
+    boundsBehavior: Flickable.StopAtBounds
     interactive: contentWidth > width
     Layout.fillWidth: true
     Layout.preferredHeight: Kirigami.Units.gridUnit * 5.8
@@ -87,6 +87,7 @@ Flickable {
 
     HorizontalWheelHandler {
         flickable: root
+        snapStep: root.cardWidth + root.cardSpacing
     }
 
     Row {

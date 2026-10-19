@@ -10,6 +10,13 @@ Item {
     property var model: []
     property string chartMode: "hourly"
     property int hoveredIndex: -1
+    property int nowIndex: -1
+    property int visibleCount: model.length
+    property int wheelNotchSteps: 1
+    property bool followNow: false
+    property real windowStart: -1
+    property real windowLength: 0
+    readonly property alias flickable: plotFlick
 
     signal pointActivated(var item)
 
@@ -20,6 +27,12 @@ Item {
     readonly property real chartBottom: labelHeight + Kirigami.Units.smallSpacing
     readonly property real plotWidth: Math.max(1, width - chartLeft - chartRight)
     readonly property real plotHeight: Math.max(1, height - chartTop - chartBottom)
+    readonly property real edgePad: Kirigami.Units.gridUnit
+    readonly property int shownCount: Math.max(1, Math.min(visibleCount, model.length))
+    readonly property real pointSpacing: shownCount > 1 ? Math.max(1, plotWidth - edgePad * 2) / (shownCount - 1) : 0
+    readonly property real leadingIndex: pointSpacing > 0 ? plotFlick.contentX / pointSpacing : 0
+    readonly property int pastEnd: nowIndex > 0 ? nowIndex : -1
+    readonly property int futureStart: Math.max(0, nowIndex)
     readonly property real minTemp: computeMinTemperature()
     readonly property real maxTemp: computeMaxTemperature()
     readonly property real paddedLow: minTemp - Math.max(1, (maxTemp - minTemp) * 0.12)
@@ -27,10 +40,14 @@ Item {
     readonly property real labelFontSize: Math.max(10, Kirigami.Units.gridUnit * 0.58)
     readonly property var hoveredItem: hoveredIndex >= 0 && hoveredIndex < model.length ? model[hoveredIndex] : null
 
-    readonly property var highPoints: pointsForField("temperature_2m_max")
-    readonly property var lowPoints: pointsForField("temperature_2m_min")
-    readonly property var hourlyPoints: pointsForField("temperature_2m")
-    readonly property string bandSvg: bandSvgPath()
+    readonly property var pastHighPoints: pointsForField("temperature_2m_max", 0, pastEnd)
+    readonly property var highPoints: pointsForField("temperature_2m_max", futureStart, model.length - 1)
+    readonly property var pastLowPoints: pointsForField("temperature_2m_min", 0, pastEnd)
+    readonly property var lowPoints: pointsForField("temperature_2m_min", futureStart, model.length - 1)
+    readonly property var pastHourlyPoints: pointsForField("temperature_2m", 0, pastEnd)
+    readonly property var hourlyPoints: pointsForField("temperature_2m", futureStart, model.length - 1)
+    readonly property string pastBandSvg: bandSvgPath(0, pastEnd)
+    readonly property string bandSvg: bandSvgPath(futureStart, model.length - 1)
 
     function numberAt(item, fieldName) {
         const value = Number(item ? item[fieldName] : undefined);
@@ -77,12 +94,36 @@ Item {
         return chartTop + plotHeight - ((value - paddedLow) / range) * plotHeight;
     }
 
+    // Content coordinates inside plotFlick.
     function xFor(index) {
         if (model.length <= 1)
-            return chartLeft + plotWidth / 2;
+            return plotWidth / 2;
 
-        return chartLeft + plotWidth * index / (model.length - 1);
+        return edgePad + pointSpacing * index;
     }
+
+    function viewX(index) {
+        return chartLeft + xFor(index) - plotFlick.contentX;
+    }
+
+    function isPast(index) {
+        return nowIndex >= 0 && index < nowIndex;
+    }
+
+    function setLeadingIndex(index) {
+        const maxX = Math.max(0, plotFlick.contentWidth - plotFlick.width);
+        plotFlick.contentX = Math.max(0, Math.min(maxX, index * pointSpacing));
+    }
+
+    function scrollToNow() {
+        if (nowIndex >= 0)
+            setLeadingIndex(nowIndex);
+    }
+
+    onModelChanged: if (followNow)
+        Qt.callLater(scrollToNow)
+    onPointSpacingChanged: if (followNow)
+        Qt.callLater(scrollToNow)
 
     function markerY(index) {
         if (index < 0 || index >= model.length)
@@ -97,9 +138,17 @@ Item {
 
     function labelFor(item, index) {
         if (chartMode === "daily")
-            return plasmoidItem.shortDate(item.date);
+            return index === nowIndex ? plasmoidItem.dailyPrimaryLabel(item.date) : plasmoidItem.shortDate(item.date);
 
-        if (index === 0 || index === model.length - 1 || index % 6 === 0)
+        if (index === nowIndex)
+            return plasmoidItem.hourLabel(item.time);
+        if (nowIndex >= 0 && Math.abs(index - nowIndex) < 3)
+            return "";
+
+        const hour = new Date(item.time).getHours();
+        if (hour === 0)
+            return plasmoidItem.dailySecondaryLabel(String(item.time).slice(0, 10));
+        if (hour % 6 === 0)
             return plasmoidItem.hourLabel(item.time);
 
         return "";
@@ -113,7 +162,12 @@ Item {
     function tooltipTitle(item) {
         if (!item)
             return "";
-        return chartMode === "daily" ? plasmoidItem.dailyPrimaryLabel(item.date) : plasmoidItem.hourLabel(item.time);
+        if (chartMode === "daily")
+            return plasmoidItem.trf("%1, %2", plasmoidItem.dailyPrimaryLabel(item.date), plasmoidItem.dailySecondaryLabel(item.date));
+        const hour = plasmoidItem.hourLabel(item.time);
+        return isPast(hoveredIndex) || hoveredIndex - nowIndex >= 24
+            ? plasmoidItem.trf("%1, %2", plasmoidItem.dailySecondaryLabel(String(item.time).slice(0, 10)), hour)
+            : hour;
     }
 
     function tooltipWeatherDescription(item) {
@@ -147,20 +201,19 @@ Item {
         return plasmoidItem.formatPercent(probability);
     }
 
-    function indexAtX(xPos) {
-        if (model.length === 0 || xPos < chartLeft || xPos > chartLeft + plotWidth)
+    function indexAtX(contentPos) {
+        if (model.length === 0)
             return -1;
-        if (model.length === 1)
+        if (model.length === 1 || pointSpacing <= 0)
             return 0;
-        const ratio = (xPos - chartLeft) / plotWidth;
-        return Math.max(0, Math.min(model.length - 1, Math.round(ratio * (model.length - 1))));
+        return Math.max(0, Math.min(model.length - 1, Math.round((contentPos - edgePad) / pointSpacing)));
     }
 
-    function pointsForField(fieldName) {
-        const _deps = [width, height, model, chartMode, paddedLow, paddedHigh];
+    function pointsForField(fieldName, from, to) {
+        const _deps = [width, height, model, chartMode, paddedLow, paddedHigh, pointSpacing];
         void _deps;
         const points = [];
-        for (let index = 0; index < model.length; index++) {
+        for (let index = Math.max(0, from); index <= to && index < model.length; index++) {
             const value = numberAt(model[index], fieldName);
             if (!Number.isFinite(value))
                 continue;
@@ -169,20 +222,20 @@ Item {
         return points;
     }
 
-    function bandSvgPath() {
-        const _deps = [width, height, model, chartMode, paddedLow, paddedHigh];
+    function bandSvgPath(from, to) {
+        const _deps = [width, height, model, chartMode, paddedLow, paddedHigh, pointSpacing];
         void _deps;
-        if (chartMode !== "daily" || model.length === 0)
+        from = Math.max(0, from);
+        to = Math.min(model.length - 1, to);
+        if (chartMode !== "daily" || to < from)
             return "";
 
         let path = "";
-        for (let index = 0; index < model.length; index++) {
+        for (let index = from; index <= to; index++) {
             const highValue = numberAt(model[index], "temperature_2m_max");
-            const x = xFor(index);
-            const y = yFor(highValue);
-            path += (index === 0 ? "M " : " L ") + x + " " + y;
+            path += (index === from ? "M " : " L ") + xFor(index) + " " + yFor(highValue);
         }
-        for (let index = model.length - 1; index >= 0; index--) {
+        for (let index = to; index >= from; index--) {
             const lowValue = numberAt(model[index], "temperature_2m_min");
             path += " L " + xFor(index) + " " + yFor(lowValue);
         }
@@ -221,119 +274,217 @@ Item {
         }
     }
 
-    Repeater {
-        model: root.model
+    Flickable {
+        id: plotFlick
 
-        delegate: Rectangle {
-            required property var modelData
-            required property int index
-            readonly property real precipitation: root.precipitationFor(modelData)
-            readonly property real barWidth: Math.max(3, root.plotWidth / Math.max(8, root.model.length) * 0.42)
-            readonly property real barHeight: root.plotHeight * precipitation / 100
+        x: root.chartLeft
+        width: root.plotWidth
+        height: root.height
+        clip: true
+        contentWidth: root.model.length > 1 ? root.edgePad * 2 + root.pointSpacing * (root.model.length - 1) : width
+        contentHeight: height
+        flickableDirection: Flickable.HorizontalFlick
+        boundsBehavior: Flickable.StopAtBounds
+        interactive: contentWidth > width
+        onContentXChanged: root.hoveredIndex = -1
 
-            x: root.xFor(index) - barWidth / 2
-            y: root.chartTop + root.plotHeight - barHeight
-            width: barWidth
-            height: barHeight
-            color: Kirigami.Theme.highlightColor
-            opacity: root.hoveredIndex === index ? 0.32 : 0.18
+        HorizontalWheelHandler {
+            flickable: plotFlick
+            snapStep: root.pointSpacing
+            notchSteps: root.wheelNotchSteps
         }
-    }
 
-    Shape {
-        anchors.fill: parent
-        visible: root.chartMode === "daily" && root.bandSvg.length > 0
-        preferredRendererType: Shape.CurveRenderer
+        Rectangle {
+            visible: root.windowStart >= 0 && root.windowLength > 0
+            x: root.xFor(root.windowStart) - root.pointSpacing / 2
+            y: root.chartTop
+            width: root.windowLength * root.pointSpacing
+            height: root.plotHeight
+            radius: Kirigami.Units.smallSpacing
+            color: Qt.alpha(Kirigami.Theme.highlightColor, 0.08)
+        }
 
-        ShapePath {
-            fillColor: Qt.alpha(Kirigami.Theme.highlightColor, 0.22)
-            strokeWidth: -1
+        Repeater {
+            model: root.model
 
-            PathSvg {
-                path: root.bandSvg
+            delegate: Rectangle {
+                required property var modelData
+                required property int index
+                readonly property real precipitation: root.precipitationFor(modelData)
+                readonly property real barWidth: Math.max(3, root.pointSpacing * 0.42)
+                readonly property real barHeight: root.plotHeight * precipitation / 100
+
+                x: root.xFor(index) - barWidth / 2
+                y: root.chartTop + root.plotHeight - barHeight
+                width: barWidth
+                height: barHeight
+                color: Kirigami.Theme.highlightColor
+                opacity: (root.hoveredIndex === index ? 0.32 : 0.18) * (root.isPast(index) ? 0.55 : 1)
             }
         }
-    }
 
-    Shape {
-        anchors.fill: parent
-        visible: root.chartMode === "daily"
-        preferredRendererType: Shape.CurveRenderer
-
-        ShapePath {
-            strokeWidth: 2
-            strokeColor: Qt.alpha(Kirigami.Theme.highlightColor, 0.95)
-            fillColor: "transparent"
-            capStyle: ShapePath.RoundCap
-            joinStyle: ShapePath.RoundJoin
-
-            PathPolyline {
-                path: root.highPoints
-            }
-        }
-
-        ShapePath {
-            strokeWidth: 2
-            strokeColor: Qt.alpha(Kirigami.Theme.textColor, 0.42)
-            fillColor: "transparent"
-            capStyle: ShapePath.RoundCap
-            joinStyle: ShapePath.RoundJoin
-
-            PathPolyline {
-                path: root.lowPoints
-            }
-        }
-    }
-
-    Shape {
-        anchors.fill: parent
-        visible: root.chartMode === "hourly"
-        preferredRendererType: Shape.CurveRenderer
-
-        ShapePath {
-            strokeWidth: 2
-            strokeColor: Qt.alpha(Kirigami.Theme.highlightColor, 0.95)
-            fillColor: "transparent"
-            capStyle: ShapePath.RoundCap
-            joinStyle: ShapePath.RoundJoin
-
-            PathPolyline {
-                path: root.hourlyPoints
-            }
-        }
-    }
-
-    Repeater {
-        model: root.model
-
-        delegate: Text {
-            required property var modelData
-            required property int index
-            readonly property string label: root.labelFor(modelData, index)
-
-            visible: label.length > 0
-            x: root.xFor(index) - width / 2
-            y: root.height - root.labelHeight
-            text: label
+        Rectangle {
+            visible: root.chartMode === "hourly" && root.nowIndex >= 0 && root.nowIndex < root.model.length
+            x: root.xFor(root.nowIndex)
+            y: root.chartTop
+            width: 1
+            height: root.plotHeight
             color: Kirigami.Theme.textColor
-            opacity: root.hoveredIndex === index ? 1 : 0.72
-            font.pixelSize: root.labelFontSize
-            font.bold: root.hoveredIndex === index
-            horizontalAlignment: Text.AlignHCenter
+            opacity: 0.35
         }
-    }
 
-    Rectangle {
-        visible: root.hoveredIndex >= 0
-        x: root.xFor(root.hoveredIndex) - width / 2
-        y: root.markerY(root.hoveredIndex) - height / 2
-        width: Math.max(6, Kirigami.Units.smallSpacing * 1.8)
-        height: width
-        radius: width / 2
-        color: Kirigami.Theme.highlightColor
-        border.width: 1
-        border.color: Kirigami.Theme.backgroundColor
-        z: 2
+        Shape {
+            width: plotFlick.contentWidth
+            height: plotFlick.height
+            visible: root.chartMode === "daily"
+            preferredRendererType: Shape.CurveRenderer
+
+            ShapePath {
+                fillColor: Qt.alpha(Kirigami.Theme.textColor, 0.08)
+                strokeWidth: -1
+
+                PathSvg {
+                    path: root.pastBandSvg
+                }
+            }
+
+            ShapePath {
+                fillColor: Qt.alpha(Kirigami.Theme.highlightColor, 0.22)
+                strokeWidth: -1
+
+                PathSvg {
+                    path: root.bandSvg
+                }
+            }
+
+            ShapePath {
+                strokeWidth: 2
+                strokeColor: Qt.alpha(Kirigami.Theme.textColor, 0.38)
+                fillColor: "transparent"
+                capStyle: ShapePath.RoundCap
+                joinStyle: ShapePath.RoundJoin
+
+                PathPolyline {
+                    path: root.pastHighPoints
+                }
+            }
+
+            ShapePath {
+                strokeWidth: 2
+                strokeColor: Qt.alpha(Kirigami.Theme.textColor, 0.22)
+                fillColor: "transparent"
+                capStyle: ShapePath.RoundCap
+                joinStyle: ShapePath.RoundJoin
+
+                PathPolyline {
+                    path: root.pastLowPoints
+                }
+            }
+
+            ShapePath {
+                strokeWidth: 2
+                strokeColor: Qt.alpha(Kirigami.Theme.highlightColor, 0.95)
+                fillColor: "transparent"
+                capStyle: ShapePath.RoundCap
+                joinStyle: ShapePath.RoundJoin
+
+                PathPolyline {
+                    path: root.highPoints
+                }
+            }
+
+            ShapePath {
+                strokeWidth: 2
+                strokeColor: Qt.alpha(Kirigami.Theme.textColor, 0.42)
+                fillColor: "transparent"
+                capStyle: ShapePath.RoundCap
+                joinStyle: ShapePath.RoundJoin
+
+                PathPolyline {
+                    path: root.lowPoints
+                }
+            }
+        }
+
+        Shape {
+            width: plotFlick.contentWidth
+            height: plotFlick.height
+            visible: root.chartMode === "hourly"
+            preferredRendererType: Shape.CurveRenderer
+
+            ShapePath {
+                strokeWidth: 2
+                strokeColor: Qt.alpha(Kirigami.Theme.textColor, 0.38)
+                fillColor: "transparent"
+                capStyle: ShapePath.RoundCap
+                joinStyle: ShapePath.RoundJoin
+
+                PathPolyline {
+                    path: root.pastHourlyPoints
+                }
+            }
+
+            ShapePath {
+                strokeWidth: 2
+                strokeColor: Qt.alpha(Kirigami.Theme.highlightColor, 0.95)
+                fillColor: "transparent"
+                capStyle: ShapePath.RoundCap
+                joinStyle: ShapePath.RoundJoin
+
+                PathPolyline {
+                    path: root.hourlyPoints
+                }
+            }
+        }
+
+        Repeater {
+            model: root.model
+
+            delegate: Text {
+                required property var modelData
+                required property int index
+                readonly property string label: root.labelFor(modelData, index)
+
+                visible: label.length > 0
+                x: root.xFor(index) - width / 2
+                y: root.height - root.labelHeight
+                text: label
+                color: Kirigami.Theme.textColor
+                opacity: root.hoveredIndex === index ? 1 : (root.isPast(index) ? 0.45 : 0.72)
+                font.pixelSize: root.labelFontSize
+                font.bold: root.hoveredIndex === index || index === root.nowIndex
+                horizontalAlignment: Text.AlignHCenter
+            }
+        }
+
+        Rectangle {
+            visible: root.hoveredIndex >= 0
+            x: root.xFor(root.hoveredIndex) - width / 2
+            y: root.markerY(root.hoveredIndex) - height / 2
+            width: Math.max(6, Kirigami.Units.smallSpacing * 1.8)
+            height: width
+            radius: width / 2
+            color: Kirigami.Theme.highlightColor
+            border.width: 1
+            border.color: Kirigami.Theme.backgroundColor
+            z: 2
+        }
+
+        MouseArea {
+            width: plotFlick.contentWidth
+            height: plotFlick.height
+            hoverEnabled: true
+            cursorShape: root.hoveredIndex >= 0 ? Qt.PointingHandCursor : Qt.ArrowCursor
+            onPositionChanged: mouse => {
+                root.hoveredIndex = root.indexAtX(mouse.x);
+            }
+            onExited: root.hoveredIndex = -1
+            onClicked: mouse => {
+                const index = root.indexAtX(mouse.x);
+                if (index >= 0)
+                    root.pointActivated(root.model[index]);
+            }
+        }
     }
 
     Rectangle {
@@ -357,7 +508,7 @@ Item {
         x: {
             if (root.hoveredIndex < 0)
                 return 0;
-            const raw = root.xFor(root.hoveredIndex) - width / 2;
+            const raw = root.viewX(root.hoveredIndex) - width / 2;
             return Math.max(0, Math.min(root.width - width, raw));
         }
         y: {
@@ -401,21 +552,6 @@ Item {
             lineHeight: 1.2
             lineHeightMode: Text.ProportionalHeight
             verticalAlignment: Text.AlignVCenter
-        }
-    }
-
-    MouseArea {
-        anchors.fill: parent
-        hoverEnabled: true
-        cursorShape: root.hoveredIndex >= 0 ? Qt.PointingHandCursor : Qt.ArrowCursor
-        onPositionChanged: mouse => {
-            root.hoveredIndex = root.indexAtX(mouse.x);
-        }
-        onExited: root.hoveredIndex = -1
-        onClicked: mouse => {
-            const index = root.indexAtX(mouse.x);
-            if (index >= 0)
-                root.pointActivated(root.model[index]);
         }
     }
 }

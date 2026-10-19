@@ -31,6 +31,10 @@ PlasmoidItem {
     readonly property alias currentUnits: weatherService.currentUnits
     readonly property alias hourlyForecast: weatherService.hourlyForecast
     readonly property alias dailyForecast: weatherService.dailyForecast
+    readonly property alias hourlyTimeline: weatherService.hourlyTimeline
+    readonly property alias hourlyNowIndex: weatherService.hourlyNowIndex
+    readonly property alias dailyTimeline: weatherService.dailyTimeline
+    readonly property alias dailyTodayIndex: weatherService.dailyTodayIndex
     readonly property alias lastUpdated: weatherService.lastUpdated
     readonly property alias loading: weatherService.loading
     readonly property alias errorText: weatherService.errorText

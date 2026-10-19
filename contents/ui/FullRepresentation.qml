@@ -131,7 +131,7 @@ PlasmaExtras.Representation {
     }
 
     function detailModel(type) {
-        return type === "daily" ? plasmoidItem.dailyForecast : plasmoidItem.hourlyForecast;
+        return type === "daily" ? plasmoidItem.dailyTimeline : plasmoidItem.hourlyTimeline;
     }
 
     function detailIndex(type, item) {

@@ -41,8 +41,11 @@ ColumnLayout {
 
         ForecastChart {
             plasmoidItem: root.plasmoidItem
-            model: root.plasmoidItem.dailyForecast
+            model: root.plasmoidItem.dailyTimeline
+            nowIndex: root.plasmoidItem.dailyTodayIndex
             chartMode: "daily"
+            visibleCount: 7
+            followNow: true
             Layout.fillWidth: true
             Layout.fillHeight: true
             onPointActivated: item => root.host.openDailyDetail(item)

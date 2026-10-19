@@ -12,6 +12,13 @@ QtObject {
     })
     property var hourlyForecast: []
     property var dailyForecast: []
+    property var hourlyTimeline: []
+    property int hourlyNowIndex: 0
+    property var dailyTimeline: []
+    property int dailyTodayIndex: 0
+
+    readonly property int pastHours: 24
+    readonly property int futureHours: 7 * 24
     property date lastUpdated: new Date(0)
     property bool loading: false
     property string errorText: ""
@@ -52,7 +59,8 @@ QtObject {
             "hourly=" + encodeURIComponent("temperature_2m,apparent_temperature,relative_humidity_2m,precipitation_probability,precipitation,weather_code,wind_speed_10m,uv_index,is_day"),
             "daily=" + encodeURIComponent("weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,precipitation_probability_max,precipitation_sum,wind_speed_10m_max,uv_index_max,sunrise,sunset"),
             "timezone=auto",
-            "forecast_days=7",
+            "past_days=7",
+            "forecast_days=14",
             "temperature_unit=" + unit,
             "wind_speed_unit=kmh"
         ];
@@ -68,23 +76,47 @@ QtObject {
             "current=" + encodeURIComponent("european_aqi,us_aqi,pm2_5"),
             "hourly=" + encodeURIComponent("european_aqi,us_aqi,pm2_5"),
             "timezone=auto",
-            "forecast_days=2"
+            "past_days=1",
+            "forecast_days=7"
         ];
         return "https://air-quality-api.open-meteo.com/v1/air-quality?" + parameters.join("&");
+    }
+
+    function applyHourlyTimeline(hours, nowIndex) {
+        hourlyTimeline = hours;
+        hourlyNowIndex = nowIndex;
+        hourlyForecast = hours.slice(nowIndex, nowIndex + 24);
+    }
+
+    function applyDailyTimeline(days) {
+        let todayIndex = days.length;
+        for (let index = 0; index < days.length; index++) {
+            if (Formatter.isToday(days[index].date) || new Date(days[index].date + "T00:00:00").getTime() > Date.now()) {
+                todayIndex = index;
+                break;
+            }
+        }
+        todayIndex = Math.max(0, Math.min(days.length - 1, todayIndex));
+        dailyTimeline = days;
+        dailyTodayIndex = todayIndex;
+        dailyForecast = days.slice(todayIndex, todayIndex + 7);
     }
 
     function buildHourlyForecast(hourly) {
         const hours = [];
         const times = hourly.time || [];
-        let startIndex = 0;
+        let currentIndex = times.length;
         const cutoff = Date.now() - 30 * 60 * 1000;
         for (let index = 0; index < times.length; index++) {
             if (new Date(times[index]).getTime() >= cutoff) {
-                startIndex = index;
+                currentIndex = index;
                 break;
             }
         }
-        for (let index = startIndex; index < Math.min(times.length, startIndex + 24); index++) {
+        currentIndex = Math.max(0, Math.min(times.length - 1, currentIndex));
+        const startIndex = Math.max(0, currentIndex - pastHours);
+        const endIndex = Math.min(times.length, currentIndex + futureHours);
+        for (let index = startIndex; index < endIndex; index++) {
             hours.push({
                 "time": times[index],
                 "temperature_2m": Formatter.valueAt(hourly.temperature_2m, index),
@@ -101,7 +133,10 @@ QtObject {
                 "pm2_5": undefined
             });
         }
-        return hours;
+        return {
+            "hours": hours,
+            "nowIndex": Math.max(0, currentIndex - startIndex)
+        };
     }
 
     function buildDailyForecast(daily) {
@@ -149,13 +184,13 @@ QtObject {
         }
 
         const merged = [];
-        for (let index = 0; index < hourlyForecast.length; index++) {
-            const hour = hourlyForecast[index];
+        for (let index = 0; index < hourlyTimeline.length; index++) {
+            const hour = hourlyTimeline[index];
             const air = byTime[hour.time] || {
             };
             merged.push(Object.assign({}, hour, air));
         }
-        hourlyForecast = merged;
+        applyHourlyTimeline(merged, hourlyNowIndex);
     }
 
     function abortActiveRequest() {
@@ -229,10 +264,11 @@ QtObject {
                 };
                 currentUnits = response.current_units || {
                 };
-                hourlyForecast = buildHourlyForecast(response.hourly || {
+                const hourly = buildHourlyForecast(response.hourly || {
                 });
-                dailyForecast = buildDailyForecast(response.daily || {
-                });
+                applyHourlyTimeline(hourly.hours, hourly.nowIndex);
+                applyDailyTimeline(buildDailyForecast(response.daily || {
+                }));
                 lastUpdated = new Date();
                 errorText = "";
                 refreshAirQuality();
