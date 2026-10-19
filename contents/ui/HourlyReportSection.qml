@@ -74,31 +74,8 @@ ColumnLayout {
         boundsBehavior: Flickable.DragAndOvershootBounds
         interactive: contentWidth > width
 
-        WheelHandler {
-            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-            onWheel: event => {
-                const isShift = (event.modifiers & Qt.ShiftModifier) !== 0;
-                const horizontalDelta = event.pixelDelta.x !== 0 ? event.pixelDelta.x : event.angleDelta.x;
-                const verticalDelta = event.pixelDelta.y !== 0 ? event.pixelDelta.y : event.angleDelta.y;
-                let delta = 0;
-                if (horizontalDelta !== 0)
-                    delta = horizontalDelta;
-                else if (isShift && verticalDelta !== 0)
-                    delta = verticalDelta;
-                else {
-                    event.accepted = false;
-                    return;
-                }
-                const maxX = Math.max(0, hourlyReportFlick.contentWidth - hourlyReportFlick.width);
-                const nextX = Math.max(0, Math.min(maxX, hourlyReportFlick.contentX - delta));
-                if (nextX !== hourlyReportFlick.contentX) {
-                    hourlyReportFlick.cancelFlick();
-                    hourlyReportFlick.contentX = nextX;
-                    event.accepted = true;
-                } else {
-                    event.accepted = false;
-                }
-            }
+        HorizontalWheelHandler {
+            flickable: hourlyReportFlick
         }
 
         Row {

@@ -85,31 +85,8 @@ Flickable {
     onModelChanged: Qt.callLater(scrollSelectedIntoView)
     Component.onCompleted: Qt.callLater(scrollSelectedIntoView)
 
-    WheelHandler {
-        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-        onWheel: event => {
-            const isShift = (event.modifiers & Qt.ShiftModifier) !== 0;
-            const horizontalDelta = event.pixelDelta.x !== 0 ? event.pixelDelta.x : event.angleDelta.x;
-            const verticalDelta = event.pixelDelta.y !== 0 ? event.pixelDelta.y : event.angleDelta.y;
-            let delta = 0;
-            if (horizontalDelta !== 0)
-                delta = horizontalDelta;
-            else if (isShift && verticalDelta !== 0)
-                delta = verticalDelta;
-            else {
-                event.accepted = false;
-                return;
-            }
-            const maxX = Math.max(0, root.contentWidth - root.width);
-            const nextX = Math.max(0, Math.min(maxX, root.contentX - delta));
-            if (nextX !== root.contentX) {
-                root.cancelFlick();
-                root.contentX = nextX;
-                event.accepted = true;
-            } else {
-                event.accepted = false;
-            }
-        }
+    HorizontalWheelHandler {
+        flickable: root
     }
 
     Row {
