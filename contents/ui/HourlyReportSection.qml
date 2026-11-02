@@ -15,6 +15,9 @@ ColumnLayout {
 
     readonly property real hourStep: hourCardWidth + hourCardSpacing
     property bool syncing: false
+    property int keyboardIndex: -1
+    readonly property int selectedIndex: host.selectedReportType === "hourly" ? host.detailIndex("hourly", host.selectedReportItem) : -1
+    readonly property int tabIndex: keyboardIndex >= 0 ? keyboardIndex : (selectedIndex >= 0 ? selectedIndex : plasmoidItem.hourlyNowIndex)
 
     Layout.fillWidth: true
     spacing: Kirigami.Units.largeSpacing
@@ -31,9 +34,33 @@ ColumnLayout {
             centerStripOn(index);
     }
 
+    function resetToNow() {
+        keyboardIndex = -1;
+        centerStripOn(plasmoidItem.hourlyNowIndex);
+    }
+
     function scrollToCurrent() {
         const index = host.activeDetailType === "hourly" ? host.detailIndex("hourly", host.activeDetailItem) : -1;
         centerStripOn(index >= 0 ? index : plasmoidItem.hourlyNowIndex);
+    }
+
+    function ensureCardVisible(index) {
+        const left = index * hourStep;
+        const right = left + hourCardWidth;
+        if (left < hourlyReportFlick.contentX)
+            hourlyReportFlick.contentX = left;
+        else if (right > hourlyReportFlick.contentX + hourlyReportFlick.width)
+            hourlyReportFlick.contentX = right - hourlyReportFlick.width;
+    }
+
+    function navigateCards(from, offset) {
+        const count = plasmoidItem.hourlyTimeline.length;
+        if (count === 0)
+            return;
+        const target = offset === 0 ? plasmoidItem.hourlyNowIndex : Math.max(0, Math.min(count - 1, from + offset));
+        const card = hourlyCards.itemAt(target);
+        if (card)
+            card.takeFocus();
     }
 
     function syncChartFromStrip() {
@@ -57,6 +84,7 @@ ColumnLayout {
         target: root.plasmoidItem
 
         function onHourlyTimelineChanged() {
+            root.keyboardIndex = -1;
             Qt.callLater(root.scrollToCurrent);
         }
     }
@@ -152,6 +180,8 @@ ColumnLayout {
             spacing: root.hourCardSpacing
 
             Repeater {
+                id: hourlyCards
+
                 model: root.plasmoidItem.hourlyTimeline
 
                 delegate: HourlyReportCard {
@@ -160,9 +190,15 @@ ColumnLayout {
                     plasmoidItem: root.plasmoidItem
                     selected: root.host.isSelected("hourly", modelData)
                     past: index < root.plasmoidItem.hourlyNowIndex
+                    tabStop: index === root.tabIndex
                     cardWidth: root.hourCardWidth
                     height: hourlyReportRow.height
                     onActivated: root.host.openHourlyDetail(modelData)
+                    onNavigated: offset => root.navigateCards(index, offset)
+                    onFocused: {
+                        root.keyboardIndex = index;
+                        root.ensureCardVisible(index);
+                    }
                 }
             }
         }

@@ -223,6 +223,14 @@ PlasmaExtras.Representation {
             if (fullRoot.selectedReportKey.length === 0 && fullRoot.plasmoidItem.hourlyForecast.length > 0)
                 fullRoot.selectHourly(fullRoot.plasmoidItem.hourlyForecast[0]);
         }
+
+        function onExpandedChanged() {
+            if (!fullRoot.plasmoidItem.expanded || fullRoot.detailViewOpen)
+                return;
+            if (fullRoot.plasmoidItem.hourlyForecast.length > 0)
+                fullRoot.selectHourly(fullRoot.plasmoidItem.hourlyForecast[0]);
+            Qt.callLater(overviewView.resetTimelinesToNow);
+        }
     }
 
     contentItem: Item {

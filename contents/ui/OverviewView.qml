@@ -26,6 +26,11 @@ ColumnLayout {
         hourlyReportSection.scrollSelectedIntoView(item);
     }
 
+    function resetTimelinesToNow() {
+        hourlyReportSection.resetToNow();
+        dailyReportSection.resetToNow();
+    }
+
     NumberAnimation {
         id: overviewFadeIn
 
@@ -147,6 +152,8 @@ ColumnLayout {
     }
 
     DailyReportSection {
+        id: dailyReportSection
+
         plasmoidItem: root.plasmoidItem
         host: root.host
         chartSectionHeight: root.chartSectionHeight

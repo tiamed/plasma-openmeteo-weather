@@ -110,9 +110,13 @@ Item {
         return nowIndex >= 0 && index < nowIndex;
     }
 
-    function setLeadingIndex(index) {
+    function leadingX(index) {
         const maxX = Math.max(0, plotFlick.contentWidth - plotFlick.width);
-        plotFlick.contentX = Math.max(0, Math.min(maxX, index * pointSpacing));
+        return Math.max(0, Math.min(maxX, index * pointSpacing));
+    }
+
+    function setLeadingIndex(index) {
+        plotFlick.contentX = leadingX(index);
     }
 
     function scrollToNow() {

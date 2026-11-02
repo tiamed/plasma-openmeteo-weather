@@ -11,9 +11,16 @@ Rectangle {
     required property bool selected
     required property real cardWidth
     property bool past: false
+    property bool tabStop: true
     readonly property string hourText: plasmoidItem.hourLabel(modelData.time)
     readonly property bool dayStart: new Date(modelData.time).getHours() === 0 && hourText !== plasmoidItem.tr("Now")
     signal activated()
+    signal navigated(int offset)
+    signal focused()
+
+    function takeFocus() {
+        cardMouse.forceActiveFocus(Qt.TabFocusReason);
+    }
 
     width: cardWidth
     opacity: past && !selected ? 0.6 : 1
@@ -73,7 +80,7 @@ Rectangle {
 
         anchors.fill: parent
         hoverEnabled: true
-        activeFocusOnTab: true
+        activeFocusOnTab: root.tabStop
         cursorShape: Qt.PointingHandCursor
         Accessible.role: Accessible.Button
         Accessible.name: plasmoidItem.trf("%1, %2, %3", root.plasmoidItem.hourLabel(root.modelData.time), root.plasmoidItem.weatherDescription(root.modelData.weather_code), root.plasmoidItem.formatTemperature(root.modelData.temperature_2m, true))
@@ -87,8 +94,22 @@ Rectangle {
                 root.activated();
                 event.accepted = true;
                 break;
+            case Qt.Key_Left:
+                root.navigated(-1);
+                event.accepted = true;
+                break;
+            case Qt.Key_Right:
+                root.navigated(1);
+                event.accepted = true;
+                break;
+            case Qt.Key_Home:
+                root.navigated(0);
+                event.accepted = true;
+                break;
             }
         }
+        onActiveFocusChanged: if (activeFocus)
+            root.focused()
         onPressed: forceActiveFocus()
         onClicked: root.activated()
     }

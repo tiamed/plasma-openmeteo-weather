@@ -14,6 +14,8 @@ Flickable {
     property real cardWidth: Kirigami.Units.gridUnit * 4.7
     property real cardSpacing: Kirigami.Units.smallSpacing
 
+    readonly property int tabIndex: Math.max(0, selectedIndex())
+
     signal pointActivated(var item)
 
     clip: true
@@ -65,14 +67,34 @@ Flickable {
         }
     }
 
-    function scrollSelectedIntoView() {
-        let index = -1;
+    function selectedIndex() {
         for (let i = 0; i < model.length; i++) {
-            if (isSelected(model[i])) {
-                index = i;
-                break;
-            }
+            if (isSelected(model[i]))
+                return i;
         }
+        return -1;
+    }
+
+    function ensureCardVisible(index) {
+        const left = index * (cardWidth + cardSpacing);
+        const right = left + cardWidth;
+        if (left < contentX)
+            contentX = left;
+        else if (right > contentX + width)
+            contentX = right - width;
+    }
+
+    function moveFocus(index) {
+        if (index < 0 || index >= model.length)
+            return;
+        root.pointActivated(model[index]);
+        const card = cards.itemAt(index);
+        if (card)
+            card.takeFocus();
+    }
+
+    function scrollSelectedIntoView() {
+        const index = selectedIndex();
         if (index < 0)
             return;
         const step = cardWidth + cardSpacing;
@@ -97,13 +119,20 @@ Flickable {
         spacing: root.cardSpacing
 
         Repeater {
+            id: cards
+
             model: root.model
 
             delegate: Rectangle {
                 id: trendCard
 
                 required property var modelData
+                required property int index
                 readonly property bool selected: root.isSelected(modelData)
+
+                function takeFocus() {
+                    cardMouse.forceActiveFocus(Qt.TabFocusReason);
+                }
                 readonly property string iconSource: root.iconFor(modelData)
                 readonly property bool fileIcon: iconSource.startsWith("file:") || iconSource.startsWith("/")
 
@@ -184,7 +213,7 @@ Flickable {
 
                     anchors.fill: parent
                     hoverEnabled: true
-                    activeFocusOnTab: true
+                    activeFocusOnTab: trendCard.index === root.tabIndex
                     cursorShape: Qt.PointingHandCursor
                     Accessible.role: Accessible.Button
                     Accessible.name: plasmoidItem.trf("%1, %2", root.titleFor(trendCard.modelData), root.subtitleFor(trendCard.modelData))
@@ -198,8 +227,18 @@ Flickable {
                             root.pointActivated(trendCard.modelData);
                             event.accepted = true;
                             break;
+                        case Qt.Key_Left:
+                            root.moveFocus(trendCard.index - 1);
+                            event.accepted = true;
+                            break;
+                        case Qt.Key_Right:
+                            root.moveFocus(trendCard.index + 1);
+                            event.accepted = true;
+                            break;
                         }
                     }
+                    onActiveFocusChanged: if (activeFocus)
+                        root.ensureCardVisible(trendCard.index)
                     onPressed: forceActiveFocus()
                     onClicked: root.pointActivated(trendCard.modelData)
                 }

@@ -13,6 +13,10 @@ ColumnLayout {
     Layout.fillWidth: true
     spacing: Kirigami.Units.largeSpacing
 
+    function resetToNow() {
+        dailyChart.scrollToNow();
+    }
+
     ReportSectionHeader {
         title: plasmoidItem.tr("Daily Report")
         subtitle: plasmoidItem.tr("7 days")
@@ -40,6 +44,8 @@ ColumnLayout {
         }
 
         ForecastChart {
+            id: dailyChart
+
             plasmoidItem: root.plasmoidItem
             model: root.plasmoidItem.dailyTimeline
             nowIndex: root.plasmoidItem.dailyTodayIndex
