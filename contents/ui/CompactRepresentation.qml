@@ -22,9 +22,14 @@ MouseArea {
     acceptedButtons: Qt.LeftButton | Qt.MiddleButton
     activeFocusOnTab: true
 
-    Layout.minimumWidth: horizontalPanel ? Kirigami.Units.gridUnit * 3 : Kirigami.Units.iconSizes.small
-    Layout.preferredWidth: showText ? Kirigami.Units.gridUnit * 5 : Kirigami.Units.iconSizes.smallMedium
-    Layout.maximumWidth: showText ? Kirigami.Units.gridUnit * 7 : Kirigami.Units.iconSizes.medium
+    // Hug the icon + label instead of reserving a fixed grid-unit width: with a
+    // fixed preferred width the centered RowLayout leaves large empty margins on
+    // both sides of the panel item.
+    readonly property real compactWidth: content.implicitWidth + Kirigami.Units.smallSpacing
+
+    Layout.minimumWidth: horizontalPanel ? compactWidth : Kirigami.Units.iconSizes.small
+    Layout.preferredWidth: horizontalPanel ? compactWidth : Kirigami.Units.iconSizes.smallMedium
+    Layout.maximumWidth: horizontalPanel ? compactWidth : Kirigami.Units.iconSizes.medium
     Layout.minimumHeight: verticalPanel ? width : Kirigami.Units.iconSizes.small
     Layout.preferredHeight: Kirigami.Units.iconSizes.smallMedium
 
